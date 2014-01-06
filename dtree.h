@@ -12,7 +12,10 @@
 #ifndef DTREE_H
 #define DTREE_H
 
+#include "dtree_properties.h"
+
 #include <stdint.h>
+#include <stdio.h>
 
 //
 // Module initialization & destruction
@@ -49,6 +52,8 @@ void dtree_close(void);
  */
 typedef uint32_t dtree_addr_t;
 
+struct dtree_hash_properties;
+
 /**
  * Device info representation.
  *
@@ -60,6 +65,12 @@ struct dtree_dev_t {
 	dtree_addr_t base;
 	dtree_addr_t high;
 	const char  **compat;
+	struct dtree_hash_properties *properties;
+};
+
+struct dtree_binding_t {
+	const char *name;
+	int (*dev_parse)(struct dtree_dev_t *dev, FILE *f, const char *fname);
 };
 
 #define DTREE_GETTER static inline
@@ -107,6 +118,25 @@ const char **dtree_dev_compat(const struct dtree_dev_t *d)
 	return d->compat;
 }
 
+DTREE_GETTER
+const char *dtree_dev_get_string_property(const struct dtree_dev_t *d, const char *name)
+{
+	struct dtree_data data;
+
+	dtree_property_find(d, name, &data);
+
+	return data.d.s;
+}
+
+DTREE_GETTER
+uint32_t dtree_dev_get_integer_property(const struct dtree_dev_t *d, const char *name)
+{
+	struct dtree_data data;
+
+	dtree_property_find(d, name, &data);
+
+	return data.d.v;
+}
 
 //
 // Iteration routines

@@ -1,4 +1,5 @@
 #include "dtree.h"
+#include "dtree_procfs.h"
 #include "test.h"
 
 void test_list_all(void)
@@ -72,6 +73,14 @@ void test_find_with_discriminator(void)
 {
 	test_start();
 
+	struct dtree_binding_t binds[] = {
+		{ "instance", dev_parse_helper_string },
+		{ "value", dev_parse_helper_integer },
+		{ NULL, NULL }
+	};
+
+	dtree_procfs_set_bindings(binds);
+
 	struct dtree_dev_t *dev = NULL;
 	dev = dtree_byname("serial@84000000");
 	fail_on_true(dev == NULL, "Could not find the device 'serial@84000000'");
@@ -79,11 +88,14 @@ void test_find_with_discriminator(void)
 	const char  *name = dtree_dev_name(dev);
 	dtree_addr_t base = dtree_dev_base(dev);
 	dtree_addr_t high = dtree_dev_high(dev);
+	const char *prop1 = dtree_dev_get_string_property(dev, "instance");
+	const uint32_t prop2 = dtree_dev_get_integer_property(dev, "value");
 
 	fail_on_false(high - base == 0xFFFF, "Invalid high detected for serial@84000000)");
 
-	printf("DEV '%s' at 0x%08X\n", name, base);
+	printf("DEV '%s' at 0x%08X properties: instance '%s' value '%d'\n", name, base, prop1, prop2);
 	dtree_dev_free(dev);
+	dtree_procfs_unset_bindings();
 
 	test_end();
 }

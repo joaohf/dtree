@@ -9,6 +9,7 @@
 #include "dtree_error.h"
 #include "dtree_util.h"
 #include "dtree_procfs.h"
+#include "dtree_properties.h"
 #include "stack.h"
 
 #include <errno.h>
@@ -19,6 +20,7 @@
 
 static struct stack *g_path = NULL;
 static DIR *g_dir = NULL;
+static struct dtree_binding_t *dtree_bindings = NULL;
 
 static const char *NULL_ENTRY = NULL;
 
@@ -32,6 +34,16 @@ static
 void *stack_pop_fname(struct stack **path)
 {
 	return stack_pop(path);
+}
+
+void dtree_procfs_set_bindings(struct dtree_binding_t *dt_b)
+{
+	dtree_bindings = dt_b;
+}
+
+void dtree_procfs_unset_bindings()
+{
+	dtree_bindings = NULL;
 }
 
 /**
@@ -455,6 +467,63 @@ int dev_parse_compat(struct dtree_dev_t *dev, struct stack **path, const char *f
 	return 0;
 }
 
+int dev_parse_helper_string(struct dtree_dev_t *dev, FILE *f, const char *fname)
+{
+	if(f == NULL)
+		return 1;
+
+	size_t length = 0;
+	const char *content = file_read_and_close(f, &length);
+	if(content == NULL)
+		return 2;
+
+	dtree_property_add(dev, fname, content, length);
+
+	return 0;
+}
+
+int dev_parse_helper_integer(struct dtree_dev_t *dev, FILE *f, const char *fname)
+{
+	if(f == NULL)
+		return 1;
+
+	size_t length = 0;
+	const char *content = file_read_and_close(f, &length);
+	if(content == NULL)
+		return 2;
+
+	if(length > 4) {
+		dtree_error_clear();
+		free((void *) content);
+		return 3;
+	}
+
+	uint32_t value = convert_raw32(content);
+
+	free((void *) content);
+
+	dtree_property_add(dev, fname, &value, 0);
+
+	return 0;
+}
+
+static
+int dev_parse_bindings(struct dtree_dev_t *dev, struct stack **path, char *fname)
+{
+	struct dtree_binding_t *dtree_binding;
+
+	for (dtree_binding = dtree_bindings; dtree_binding->name != NULL; dtree_binding++) {
+		if(!strcmp(fname, dtree_binding->name)) {
+			FILE *f = path_fopen(path, fname, "r");
+
+			if (dtree_binding->dev_parse(dev, f, dtree_binding->name))
+				fclose(f);
+		}
+	}
+
+	return 0;
+}
+
 static
 struct dtree_dev_t *dev_from_dir(DIR *curr, struct stack **path)
 {
@@ -466,6 +535,7 @@ struct dtree_dev_t *dev_from_dir(DIR *curr, struct stack **path)
 
 	assert(stack_depth(path) > 1); // the root is never a device
 
+	dev->properties = NULL;
 	dev->compat = &NULL_ENTRY;
 	dev->name = strdup((char *) stack_top(path));
 	if(dev->name == NULL) {
@@ -486,6 +556,11 @@ struct dtree_dev_t *dev_from_dir(DIR *curr, struct stack **path)
 		}
 		if(!strcmp(d->d_name, "compatible")) {
 			if(dev_parse_compat(dev, path, "compatible"))
+				goto clean_and_exit;
+		}
+
+		if (dtree_bindings) {
+			if(dev_parse_bindings(dev, path, d->d_name))
 				goto clean_and_exit;
 		}
 	}
@@ -549,6 +624,11 @@ void dtree_procfs_dev_free(struct dtree_dev_t *dev)
 	dev->compat = NULL;
 	dev->base = 0;
 	dev->high = 0;
+
+	if (dev->properties) {
+		dtree_property_empty(dev);
+		dev->properties = NULL;
+	}
 
 	free(dev);
 }

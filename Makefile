@@ -5,10 +5,10 @@ CFLAGS = -std=gnu99 -Wall -pedantic -Wextra -g -fPIC
 Q ?= @
 
 all: libdtree.a libdtree.so
-libdtree.a: dtree_error.o dtree_procfs.o dtree.o bcd_arith.o
+libdtree.a: dtree_error.o dtree_procfs.o dtree_properties.o dtree.o bcd_arith.o
 	$(Q) $(AR) rcs $@ $^
 
-libdtree.so: dtree_error.o dtree_procfs.o dtree.o bcd_arith.o
+libdtree.so: dtree_error.o dtree_procfs.o dtree_properties.o dtree.o bcd_arith.o
 	$(Q) $(CC) -shared -o $@ $^
 
 busio: busio.o
