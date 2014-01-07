@@ -17,6 +17,21 @@
 #include <stdint.h>
 #include <stdio.h>
 
+struct dtree_t {
+	/**
+	 * Error state.
+	 */
+	int error;
+
+	/**
+	 * Holds errno. It is valid when error
+	 * is less then zero.
+	 */
+	int xerrno;
+
+	struct dtree_procfs_t *procfs;
+};
+
 //
 // Module initialization & destruction
 //
@@ -33,15 +48,14 @@
  *
  * Returns 0 on success. On error sets error state.
  */
-int dtree_open(const char *rootd);
+int dtree_open(const char *rootd, struct dtree_t **dt);
 
 /**
  * Free's resources of the module.
  * It is an error to call it when dtree_open()
  * has failed or to call it twice.
  */
-void dtree_close(void);
-
+void dtree_close(struct dtree_t *dt);
 
 //
 // Data types
@@ -70,7 +84,7 @@ struct dtree_dev_t {
 
 struct dtree_binding_t {
 	const char *name;
-	int (*dev_parse)(struct dtree_dev_t *dev, FILE *f, const char *fname);
+	int (*dev_parse)(struct dtree_t *dt, struct dtree_dev_t *dev, FILE *f, const char *fname);
 };
 
 #define DTREE_GETTER static inline
@@ -152,7 +166,7 @@ uint32_t dtree_dev_get_integer_property(const struct dtree_dev_t *d, const char 
  * When no more entries are available or and error occoures
  * returns NULL. On error sets error state.
  */
-struct dtree_dev_t *dtree_next(void);
+struct dtree_dev_t *dtree_next(struct dtree_t *dt);
 
 /**
  * Look up for device by name. Returns the first occurence
@@ -165,7 +179,7 @@ struct dtree_dev_t *dtree_next(void);
  * Returns NULL when not found or on error.
  * On error sets error state.
  */
-struct dtree_dev_t *dtree_byname(const char *name);
+struct dtree_dev_t *dtree_byname(struct dtree_t *dt, const char *name);
 
 /**
  * Looks up for device compatible with the given type.
@@ -177,7 +191,7 @@ struct dtree_dev_t *dtree_byname(const char *name);
  * Returns NULL when not found or on error.
  * On error sets error state.
  */
-struct dtree_dev_t *dtree_bycompat(const char *compat);
+struct dtree_dev_t *dtree_bycompat(struct dtree_t *dt, const char *compat);
 
 /**
  * Resets the iteration over devices.
@@ -186,7 +200,7 @@ struct dtree_dev_t *dtree_bycompat(const char *compat);
  * 
  * Returns 0 on success. On error sets error state.
  */
-int dtree_reset(void);
+int dtree_reset(struct dtree_t *dt);
 
 
 //
@@ -212,7 +226,7 @@ void dtree_dev_free(struct dtree_dev_t *dev);
  * failing call. That call would overwrite current
  * error state.
  */
-int dtree_iserror(void);
+int dtree_iserror(struct dtree_t *dt);
 
 /**
  * When an error occures this function should
@@ -220,6 +234,6 @@ int dtree_iserror(void);
  *
  * The pointer points to static memory.
  */
-const char *dtree_errstr(void);
+const char *dtree_errstr(struct dtree_t *dt);
 
 #endif

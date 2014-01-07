@@ -5,61 +5,53 @@
 #include <string.h>
 #include <assert.h>
 
-/**
- * Error state.
- */
-static int error = 0;
-
-/**
- * Holds errno. It is valid when error
- * is less then zero.
- */
-static int xerrno = 0;
-
 #define ERRSTR_COUNT ((int) (sizeof(errstr)/sizeof(char *)))
 static const char *errstr[] = {
 	[0]                       = "Successful",
 	[DTREE_ECANT_READ_ROOT]   = "Can not read the root dir"
 };
 
-void dtree_error_clear(void)
+void dtree_error_clear(struct dtree_t *dt)
 {
-	error  = 0;
-	xerrno = 0;
+	dt->error  = 0;
+	dt->xerrno = 0;
 }
 
-void dtree_error_set(int e)
+void dtree_error_set(struct dtree_t *dt, int e)
 {
 	assert(e != 0);
 
-	error  = e;
-	xerrno = errno;
+	dt->error  = e;
+	dt->xerrno = errno;
 }
 
-void dtree_errno_set(int e)
+void dtree_errno_set(struct dtree_t *dt, int e)
 {
-	error  = -1;
-	xerrno = e;
+	dt->error  = -1;
+	dt->xerrno = e;
 }
 
-void dtree_error_from_errno(void)
+void dtree_error_from_errno(struct dtree_t *dt)
 {
 	if(errno != 0)
-		dtree_errno_set(errno);
+		dtree_errno_set(dt, errno);
 }
 
-int dtree_iserror(void)
+int dtree_iserror(struct dtree_t *dt)
 {
-	return error != 0;
+	if (!dt)
+		return 0;
+
+	return dt->error != 0;
 }
 
-const char *dtree_errstr(void)
+const char *dtree_errstr(struct dtree_t *dt)
 {
-	if(error >= 0 && error < ERRSTR_COUNT)
-		return errstr[error];
+	if(dt->error >= 0 && dt->error < ERRSTR_COUNT)
+		return errstr[dt->error];
 
-	if(error < 0)
-		return strerror(xerrno);
+	if(dt->error < 0)
+		return strerror(dt->xerrno);
 
 	return "Unknown error occured";
 }

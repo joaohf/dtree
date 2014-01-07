@@ -10,43 +10,43 @@ void test_hex2num_digit(void)
 
 	v = hex2num('0', &error);
 	warn_on_true(error, "Error is set but should not be");
-	fail_on_false(v == 0, "'0' could not be parsed");
+	fail_on_false(NULL, v == 0, "'0' could not be parsed");
 
 	v = hex2num('1', &error);
 	warn_on_true(error, "Error is set but should not be");
-	fail_on_false(v == 1, "'1' could not be parsed");
+	fail_on_false(NULL, v == 1, "'1' could not be parsed");
 
 	v = hex2num('2', &error);
 	warn_on_true(error, "Error is set but should not be");
-	fail_on_false(v == 2, "'2' could not be parsed");
+	fail_on_false(NULL, v == 2, "'2' could not be parsed");
 
 	v = hex2num('3', &error);
 	warn_on_true(error, "Error is set but should not be");
-	fail_on_false(v == 3, "'3' could not be parsed");
+	fail_on_false(NULL, v == 3, "'3' could not be parsed");
 
 	v = hex2num('4', &error);
 	warn_on_true(error, "Error is set but should not be");
-	fail_on_false(v == 4, "'4' could not be parsed");
+	fail_on_false(NULL, v == 4, "'4' could not be parsed");
 
 	v = hex2num('5', &error);
 	warn_on_true(error, "Error is set but should not be");
-	fail_on_false(v == 5, "'5' could not be parsed");
+	fail_on_false(NULL, v == 5, "'5' could not be parsed");
 
 	v = hex2num('6', &error);
 	warn_on_true(error, "Error is set but should not be");
-	fail_on_false(v == 6, "'6' could not be parsed");
+	fail_on_false(NULL, v == 6, "'6' could not be parsed");
 
 	v = hex2num('7', &error);
 	warn_on_true(error, "Error is set but should not be");
-	fail_on_false(v == 7, "'7' could not be parsed");
+	fail_on_false(NULL, v == 7, "'7' could not be parsed");
 
 	v = hex2num('8', &error);
 	warn_on_true(error, "Error is set but should not be");
-	fail_on_false(v == 8, "'8' could not be parsed");
+	fail_on_false(NULL, v == 8, "'8' could not be parsed");
 
 	v = hex2num('9', &error);
 	warn_on_true(error, "Error is set but should not be");
-	fail_on_false(v == 9, "'9' could not be parsed");
+	fail_on_false(NULL, v == 9, "'9' could not be parsed");
 
 	test_end();
 }
@@ -59,27 +59,27 @@ void test_hex2num_alpha_lower(void)
 
 	v = hex2num('a', &error);
 	warn_on_true(error, "Error is set but should not be");
-	fail_on_false(v == 10, "'a' could not be parsed");
+	fail_on_false(NULL, v == 10, "'a' could not be parsed");
 
 	v = hex2num('b', &error);
 	warn_on_true(error, "Error is set but should not be");
-	fail_on_false(v == 11, "'b' could not be parsed");
+	fail_on_false(NULL, v == 11, "'b' could not be parsed");
 
 	v = hex2num('c', &error);
 	warn_on_true(error, "Error is set but should not be");
-	fail_on_false(v == 12, "'c' could not be parsed");
+	fail_on_false(NULL, v == 12, "'c' could not be parsed");
 
 	v = hex2num('d', &error);
 	warn_on_true(error, "Error is set but should not be");
-	fail_on_false(v == 13, "'d' could not be parsed");
+	fail_on_false(NULL, v == 13, "'d' could not be parsed");
 
 	v = hex2num('e', &error);
 	warn_on_true(error, "Error is set but should not be");
-	fail_on_false(v == 14, "'e' could not be parsed");
+	fail_on_false(NULL, v == 14, "'e' could not be parsed");
 
 	v = hex2num('f', &error);
 	warn_on_true(error, "Error is set but should not be");
-	fail_on_false(v == 15, "'f' could not be parsed");
+	fail_on_false(NULL, v == 15, "'f' could not be parsed");
 
 	test_end();
 }
@@ -92,27 +92,27 @@ void test_hex2num_alpha_upper()
 
 	v = hex2num('A', &error);
 	warn_on_true(error, "Error is set but should not be");
-	fail_on_false(v == 10, "'A' could not be parsed");
+	fail_on_false(NULL, v == 10, "'A' could not be parsed");
 
 	v = hex2num('B', &error);
 	warn_on_true(error, "Error is set but should not be");
-	fail_on_false(v == 11, "'B' could not be parsed");
+	fail_on_false(NULL, v == 11, "'B' could not be parsed");
 
 	v = hex2num('C', &error);
 	warn_on_true(error, "Error is set but should not be");
-	fail_on_false(v == 12, "'C' could not be parsed");
+	fail_on_false(NULL, v == 12, "'C' could not be parsed");
 
 	v = hex2num('D', &error);
 	warn_on_true(error, "Error is set but should not be");
-	fail_on_false(v == 13, "'D' could not be parsed");
+	fail_on_false(NULL, v == 13, "'D' could not be parsed");
 
 	v = hex2num('E', &error);
 	warn_on_true(error, "Error is set but should not be");
-	fail_on_false(v == 14, "'E' could not be parsed");
+	fail_on_false(NULL, v == 14, "'E' could not be parsed");
 
 	v = hex2num('F', &error);
 	warn_on_true(error, "Error is set but should not be");
-	fail_on_false(v == 15, "'F' could not be parsed");
+	fail_on_false(NULL, v == 15, "'F' could not be parsed");
 
 	test_end();
 }
@@ -120,12 +120,12 @@ void test_hex2num_alpha_upper()
 #define assert_parsehex(value, variable)               \
 	variable = parse_hex(#value, strlen(#value));  \
 	fprintf(stderr, "Result: 0x%08X\n", variable); \
-	fail_on_false(variable == value, "Can not parse " #value);
+	fail_on_false(NULL, variable == value, "Can not parse " #value);
 
 #define assert_parsehex_0x(value, variable)            \
 	variable = parse_hex(#value, strlen(#value));  \
 	fprintf(stderr, "Result: 0x%08X\n", variable); \
-	fail_on_false(variable == 0x##value, "Can not parse " #value);
+	fail_on_false(NULL, variable == 0x##value, "Can not parse " #value);
 
 void test_parsehex_valid(void)
 {
@@ -177,7 +177,7 @@ void test_parsehex_valid(void)
 #define assert_fail_parsehex(value, variable)   \
 	variable = parse_hex(#value, strlen(#value));   \
 	fprintf(stderr, "Result: 0x%08X = %u\n", variable, variable); \
-	fail_on_false(variable == 0, "Parsing of " #value " leads to different result than 0");
+	fail_on_false(NULL, variable == 0, "Parsing of " #value " leads to different result than 0");
 
 void test_parsehex_invalid(void)
 {

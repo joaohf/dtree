@@ -1,6 +1,8 @@
 #include "dtree.h"
 #include "test.h"
 
+struct dtree_t *dt = NULL;
+
 void test_find_existent(void)
 {
 	test_start();
@@ -8,7 +10,7 @@ void test_find_existent(void)
 	struct dtree_dev_t *dev = NULL;
 	int count = 0;
 
-	while((dev = dtree_bycompat("simple-bus")) != NULL) {
+	while((dev = dtree_bycompat(dt, "simple-bus")) != NULL) {
 		count += 1;
 
 		const char  *name = dtree_dev_name(dev);
@@ -18,7 +20,7 @@ void test_find_existent(void)
 		dtree_dev_free(dev);
 	}
 
-	fail_on_true(count == 0, "Could not find any device compatible with 'simple-bus'");
+	fail_on_true(NULL, count == 0, "Could not find any device compatible with 'simple-bus'");
 
 	test_end();
 }
@@ -28,8 +30,8 @@ void test_find_non_existent(void)
 	test_start();
 
 	struct dtree_dev_t *dev = NULL;
-	dev = dtree_bycompat("@not-implemented-device");
-	fail_on_true(dev != NULL, "Device '@not-implemented-device' was found!");
+	dev = dtree_bycompat(dt, "@not-implemented-device");
+	fail_on_true(NULL, dev != NULL, "Device '@not-implemented-device' was found!");
 
 	test_end();
 }
@@ -39,8 +41,8 @@ void test_find_null(void)
 	test_start();
 
 	struct dtree_dev_t *dev = NULL;
-	dev = dtree_bycompat(NULL);
-	fail_on_false(dev == NULL, "Device NULL was found!");
+	dev = dtree_bycompat(dt, NULL);
+	fail_on_false(NULL, dev == NULL, "Device NULL was found!");
 
 	test_end();
 }
@@ -50,8 +52,8 @@ void test_find_empty(void)
 	test_start();
 
 	struct dtree_dev_t *dev = NULL;
-	dev = dtree_bycompat("");
-	fail_on_false(dev == NULL, "Device '' was found!");
+	dev = dtree_bycompat(dt, "");
+	fail_on_false(NULL, dev == NULL, "Device '' was found!");
 
 	test_end();
 }
@@ -63,7 +65,7 @@ void test_find_serial_1_00_a(void)
 	struct dtree_dev_t *dev = NULL;
 	int count = 0;
 
-	while((dev = dtree_bycompat("xlnx,xps-uartlite-1.00.a")) != NULL) {
+	while((dev = dtree_bycompat(dt, "xlnx,xps-uartlite-1.00.a")) != NULL) {
 		count += 1;
 
 		const char  *name = dtree_dev_name(dev);
@@ -74,31 +76,31 @@ void test_find_serial_1_00_a(void)
 		dtree_dev_free(dev);
 	}
 
-	fail_on_true(count != 2, "Expected two xlnx,xps-uartlite-1.00.a compatible components");
+	fail_on_true(NULL, count != 2, "Expected two xlnx,xps-uartlite-1.00.a compatible components");
 
 	test_end();
 }
 
 int main(void)
 {
-	int err = dtree_open("device-tree");
-	halt_on_error(err, "Can not open testing device-tree");
+	int err = dtree_open("device-tree", &dt);
+	halt_on_error(NULL, err, "Can not open testing device-tree");
 
 	test_find_existent();
-	dtree_reset();
+	dtree_reset(dt);
 
 	test_find_non_existent();
-	dtree_reset();
+	dtree_reset(dt);
 
 	test_find_null();
-	dtree_reset();
+	dtree_reset(dt);
 
 	test_find_empty();
-	dtree_reset();
+	dtree_reset(dt);
 
 	test_find_serial_1_00_a();
-	dtree_reset();
+	dtree_reset(dt);
 
-	dtree_close();
+	dtree_close(dt);
 }
 

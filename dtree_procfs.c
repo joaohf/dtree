@@ -18,8 +18,14 @@
 #include <string.h>
 #include <sys/stat.h>
 
-static struct stack *g_path = NULL;
-static DIR *g_dir = NULL;
+#define container_of(ptr, type, member) \
+     ( (type *)((char *)(ptr) - offsetof(type, member)) )
+
+struct dtree_procfs_t {
+	struct stack *path;
+	DIR *dir;
+};
+
 static struct dtree_binding_t *dtree_bindings = NULL;
 
 static const char *NULL_ENTRY = NULL;
@@ -50,63 +56,91 @@ void dtree_procfs_unset_bindings()
  * This implementation doesn't accept a regular
  * file as rootd.
  */
-int dtree_procfs_open(const char *rootd)
+int dtree_procfs_open(const char *rootd, struct dtree_t *dt)
 {
+	struct dtree_procfs_t *procfs;
+
+	procfs = calloc(1, sizeof(struct dtree_procfs_t));
+	if (procfs == NULL)
+		goto exit_no_clean;
+
+	dt->procfs = procfs;
+
+	procfs->dir = NULL;
+	procfs->path = NULL;
+
 	if(rootd == NULL) {
-		dtree_error_set(EINVAL);
-		return -1;
+		dtree_error_set(dt, EINVAL);
+		goto exit_no_clean;
 	}
 
-	if(!stack_empty(&g_path)) {
-		dtree_error_set(EBUSY); // call close first
-		return -1;
+	if(!stack_empty(&procfs->path)) {
+		dtree_error_set(dt, EBUSY); // call close first
+		goto clean_and_exit;
 	}
 
-	g_dir = opendir(rootd);
-	if(g_dir == NULL) {
-		dtree_error_from_errno();
-		return -1;
+	procfs->dir = opendir(rootd);
+	if(procfs->dir == NULL) {
+		dtree_error_from_errno(dt);
+		goto clean_and_exit;
 	}
 
-	if(stack_push_fname(&g_path, rootd)) {
-		dtree_error_from_errno();
-		closedir(g_dir);
-		g_dir = NULL;
-		return -1;
+	if(stack_push_fname(&procfs->path, rootd)) {
+		dtree_error_from_errno(dt);
+		closedir(procfs->dir);
+		procfs->dir = NULL;
+		goto clean_and_exit;
 	}
 
 	return 0;
+
+clean_and_exit:
+    dtree_procfs_close(dt);
+    return -1;
+
+exit_no_clean:
+	dt->procfs = procfs;
+	return -1;
 }
 
-void dtree_procfs_close(void)
+void dtree_procfs_close(struct dtree_t *dt)
 {
-	if(g_dir != NULL) {
-		closedir(g_dir);
-		g_dir = NULL;
+	struct dtree_procfs_t *procfs = dt->procfs;
+
+	if (!procfs)
+		return;
+
+	if(procfs->dir != NULL) {
+		closedir(procfs->dir);
+		procfs->dir = NULL;
 	}
 
-	while(!stack_empty(&g_path)) {
-		void *d = stack_pop_fname(&g_path);
+	while(!stack_empty(&procfs->path)) {
+		void *d = stack_pop_fname(&procfs->path);
 		free(d);
 	}
+
+	free((void *) procfs);
 }
 
-int dtree_procfs_reset(void)
+int dtree_procfs_reset(struct dtree_t *dt)
 {
-	if(g_dir != NULL) {
-		closedir(g_dir);
-		g_dir = NULL;
+	struct dtree_procfs_t *procfs = dt->procfs;
+
+	if(procfs->dir != NULL) {
+		closedir(procfs->dir);
+		procfs->dir = NULL;
 	}
 
-	while(stack_depth(&g_path) > 1) {
-		void *p = stack_pop_fname(&g_path);
+	while(stack_depth(&procfs->path) > 1) {
+		void *p = stack_pop_fname(&procfs->path);
 		free(p);
 	}
 
-	assert(!stack_empty(&g_path));
-	g_dir = opendir(stack_top(&g_path));
+	assert(!stack_empty(&procfs->path));
+	procfs->dir = opendir(stack_top(&procfs->path));
 
-	return g_dir == NULL;
+	return procfs->dir == NULL;
 }
 
 static inline
@@ -169,7 +203,7 @@ const char *file_path_from_stack(struct stack **path, const char *fname)
 }
 
 static
-FILE *path_fopen(struct stack **path, const char *fname, const char *mode)
+FILE *path_fopen(struct dtree_t *dt, struct stack **path, const char *fname, const char *mode)
 {
 	const char *fpath = file_path_from_stack(path, fname);
 	if(fpath == NULL)
@@ -183,14 +217,14 @@ FILE *path_fopen(struct stack **path, const char *fname, const char *mode)
 	return file;
 
 clean_and_exit:
-	dtree_error_from_errno();
+	dtree_error_from_errno(dt);
 	if(fpath != NULL)
 		free((void *) fpath);
 	return NULL;
 }
 
 static
-int path_stat(struct stack **path, const char *fname, struct stat *st)
+int path_stat(struct dtree_t *dt, struct stack **path, const char *fname, struct stat *st)
 {
 	const char *fpath = file_path_from_stack(path, fname);
 	if(fpath == NULL)
@@ -203,34 +237,34 @@ int path_stat(struct stack **path, const char *fname, struct stat *st)
 	return 0;
 
 clean_and_exit:
-	dtree_error_from_errno();
+	dtree_error_from_errno(dt);
 	if(fpath != NULL)
 		free((void *) fpath);
 	return 1;
 }
 
 static
-int path_is_file(struct stack **path, const char *fname)
+int path_is_file(struct dtree_t *dt, struct stack **path, const char *fname)
 {
 	struct stat st;
-	if(path_stat(path, fname, &st))
+	if(path_stat(dt, path, fname, &st))
 		return 0;
 
 	return st_is_file(st.st_mode);
 }
 
 static
-int path_is_dir(struct stack **path, const char *fname)
+int path_is_dir(struct dtree_t *dt, struct stack **path, const char *fname)
 {
 	struct stat st;
-	if(path_stat(path, fname, &st))
+	if(path_stat(dt, path, fname, &st))
 		return 0;
 
 	return st_is_dir(st.st_mode);
 }
 
 static
-DIR *opendir_on_stack(struct stack **path)
+DIR *opendir_on_stack(struct dtree_t *dt, struct stack **path)
 {
 	const char *fpath = file_path_from_stack(path, "");
 	if(fpath == NULL)
@@ -244,14 +278,14 @@ DIR *opendir_on_stack(struct stack **path)
 	return dir;
 
 clean_and_exit:
-	dtree_error_from_errno();
+	dtree_error_from_errno(dt);
 	if(fpath != NULL)
 		free((void *) fpath);
 	return NULL;
 }
 
 static
-int dir_has_file(DIR *curr, struct stack **path, const char *fname)
+int dir_has_file(struct dtree_t *dt, DIR *curr, struct stack **path, const char *fname)
 {
 	rewinddir(curr);
 	struct dirent *d;
@@ -260,10 +294,10 @@ int dir_has_file(DIR *curr, struct stack **path, const char *fname)
 		if(strcmp(d->d_name, fname))
 			continue;
 
-		if(path_is_file(path, fname))
+		if(path_is_file(dt, path, fname))
 			return 1;
 
-		if(dtree_iserror())
+		if(dtree_iserror(dt))
 			return 0;
 	}
 
@@ -271,21 +305,21 @@ int dir_has_file(DIR *curr, struct stack **path, const char *fname)
 }
 
 static
-DIR *open_dir_from_dirent(struct dirent *d, struct stack **path)
+DIR *open_dir_from_dirent(struct dtree_t *dt, struct dirent *d, struct stack **path)
 {
 	if(d == NULL)
 		return NULL;
 
 	if(stack_push_fname(path, d->d_name)) {
-		dtree_error_from_errno();
+		dtree_error_from_errno(dt);
 		return NULL;
 	}
 
-	return opendir_on_stack(path);
+	return opendir_on_stack(dt, path);
 }
 
 static
-DIR *go_next_dir(DIR *curr, struct stack **path)
+DIR *go_next_dir(struct dtree_t *dt, DIR *curr, struct stack **path)
 {
 	struct dirent *d;
 
@@ -293,30 +327,31 @@ DIR *go_next_dir(DIR *curr, struct stack **path)
 		if(!strcmp(d->d_name, ".") || !strcmp(d->d_name, ".."))
 			continue;
 
-		if(path_is_dir(path, d->d_name))
+		if(path_is_dir(dt, path, d->d_name))
 			break;
 
-		if(dtree_iserror())
+		if(dtree_iserror(dt))
 			return NULL;
 	}
 
-	return open_dir_from_dirent(d, path);
+	return open_dir_from_dirent(dt, d, path);
 }
 
 static
-DIR *go_up_next_dir(struct stack **path)
+DIR *go_up_next_dir(struct dtree_t *dt)
 {
+	struct dtree_procfs_t *procfs = dt->procfs;
 	DIR *next = NULL;
 
 	do {
-		if(stack_depth(path) == 1) // never loose the rootd
+		if(stack_depth(&procfs->path) == 1) // never loose the rootd
 			return NULL;
 
-		const char *dname = (const char *) stack_pop_fname(path);
+		const char *dname = (const char *) stack_pop_fname(&procfs->path);
 
-		DIR *dir = opendir_on_stack(path);
+		DIR *dir = opendir_on_stack(dt, &procfs->path);
 		if(dir == NULL) {
-			dtree_error_from_errno();
+			dtree_error_from_errno(dt);
 			free((void *) dname);
 			return NULL;
 		}
@@ -328,8 +363,8 @@ DIR *go_up_next_dir(struct stack **path)
 		}
 		free((void *) dname);
 
-		next = go_next_dir(dir, path);
-		if(next == NULL && dtree_iserror()) {
+		next = go_next_dir(dt, dir, &procfs->path);
+		if(next == NULL && dtree_iserror(dt)) {
 			closedir(dir);
 			return NULL;
 		}
@@ -341,11 +376,11 @@ DIR *go_up_next_dir(struct stack **path)
 }
 
 static
-void *file_read_and_close(FILE *file, size_t *flen)
+void *file_read_and_close(struct dtree_t *dt, FILE *file, size_t *flen)
 {
 	struct stat file_stat;
 	if(fstat(fileno(file), &file_stat)) {
-		dtree_error_from_errno();
+		dtree_error_from_errno(dt);
 		fclose(file);
 		return NULL;
 	}
@@ -354,14 +389,14 @@ void *file_read_and_close(FILE *file, size_t *flen)
 
 	void *m = malloc(fsize + 1);
 	if(m == NULL) {
-		dtree_error_from_errno();
+		dtree_error_from_errno(dt);
 		fclose(file);
 		return NULL;
 	}
 	
 	size_t rlen = fread(m, 1, fsize, file);
 	if(rlen < fsize) {
-		dtree_error_from_errno();
+		dtree_error_from_errno(dt);
 		free(m);
 		fclose(file);
 		return NULL;
@@ -388,19 +423,19 @@ uint32_t convert_raw32(const char *s) {
 }
 
 static
-int dev_parse_reg(struct dtree_dev_t *dev, struct stack **path, const char *fname)
+int dev_parse_reg(struct dtree_t *dt, struct dtree_dev_t *dev, struct stack **path, const char *fname)
 {
-	FILE *regf = path_fopen(path, fname, "r");
+	FILE *regf = path_fopen(dt, path, fname, "r");
 	if(regf == NULL)
 		return 1;
 
 	size_t length = 0;
-	const char *content = file_read_and_close(regf, &length);
+	const char *content = file_read_and_close(dt, regf, &length);
 	if(content == NULL)
 		return 2;
 
 	if(length != 8) {
-		dtree_error_clear();
+		dtree_error_clear(dt);
 		free((void *) content);
 		return 3;
 	}
@@ -447,33 +482,33 @@ const char **convert_compat(const char *compat, const size_t len)
 }
 
 static
-int dev_parse_compat(struct dtree_dev_t *dev, struct stack **path, const char *fname)
+int dev_parse_compat(struct dtree_t *dt, struct dtree_dev_t *dev, struct stack **path, const char *fname)
 {
-	FILE *regf = path_fopen(path, fname, "r");
+	FILE *regf = path_fopen(dt, path, fname, "r");
 	if(regf == NULL)
 		return 1;
 
 	size_t length = 0;
-	const char *content = file_read_and_close(regf, &length);
+	const char *content = file_read_and_close(dt, regf, &length);
 	if(content == NULL)
 		return 2;
 
 	dev->compat = convert_compat(content, length);
 	if(dev->compat == NULL) {
-		dtree_error_from_errno();
+		dtree_error_from_errno(dt);
 		return 1;
 	}
 
 	return 0;
 }
 
-int dev_parse_helper_string(struct dtree_dev_t *dev, FILE *f, const char *fname)
+int dev_parse_helper_string(struct dtree_t *dt, struct dtree_dev_t *dev, FILE *f, const char *fname)
 {
 	if(f == NULL)
 		return 1;
 
 	size_t length = 0;
-	const char *content = file_read_and_close(f, &length);
+	const char *content = file_read_and_close(dt, f, &length);
 	if(content == NULL)
 		return 2;
 
@@ -482,18 +517,18 @@ int dev_parse_helper_string(struct dtree_dev_t *dev, FILE *f, const char *fname)
 	return 0;
 }
 
-int dev_parse_helper_integer(struct dtree_dev_t *dev, FILE *f, const char *fname)
+int dev_parse_helper_integer(struct dtree_t *dt, struct dtree_dev_t *dev, FILE *f, const char *fname)
 {
 	if(f == NULL)
 		return 1;
 
 	size_t length = 0;
-	const char *content = file_read_and_close(f, &length);
+	const char *content = file_read_and_close(dt, f, &length);
 	if(content == NULL)
 		return 2;
 
 	if(length > 4) {
-		dtree_error_clear();
+		//dtree_error_clear();
 		free((void *) content);
 		return 3;
 	}
@@ -508,15 +543,17 @@ int dev_parse_helper_integer(struct dtree_dev_t *dev, FILE *f, const char *fname
 }
 
 static
-int dev_parse_bindings(struct dtree_dev_t *dev, struct stack **path, char *fname)
+int dev_parse_bindings(struct dtree_t *dt, struct dtree_dev_t *dev, struct stack **path, char *fname)
 {
+	(void) dt;
+
 	struct dtree_binding_t *dtree_binding;
 
 	for (dtree_binding = dtree_bindings; dtree_binding->name != NULL; dtree_binding++) {
 		if(!strcmp(fname, dtree_binding->name)) {
-			FILE *f = path_fopen(path, fname, "r");
+			FILE *f = path_fopen(dt, path, fname, "r");
 
-			if (dtree_binding->dev_parse(dev, f, dtree_binding->name))
+			if (dtree_binding->dev_parse(dt, dev, f, dtree_binding->name))
 				fclose(f);
 		}
 	}
@@ -525,11 +562,11 @@ int dev_parse_bindings(struct dtree_dev_t *dev, struct stack **path, char *fname
 }
 
 static
-struct dtree_dev_t *dev_from_dir(DIR *curr, struct stack **path)
+struct dtree_dev_t *dev_from_dir(struct dtree_t *dt, DIR *curr, struct stack **path)
 {
 	struct dtree_dev_t *dev = malloc(sizeof(struct dtree_dev_t));
 	if(dev == NULL) {
-		dtree_error_from_errno();
+		dtree_error_from_errno(dt);
 		return NULL;
 	}
 
@@ -539,28 +576,28 @@ struct dtree_dev_t *dev_from_dir(DIR *curr, struct stack **path)
 	dev->compat = &NULL_ENTRY;
 	dev->name = strdup((char *) stack_top(path));
 	if(dev->name == NULL) {
-		dtree_error_from_errno();
+		dtree_error_from_errno(dt);
 		free(dev);
 		return NULL;
 	}
 
 	struct dirent *d;
 	rewinddir(curr);
-	while((d = readdir(curr)) != NULL) {
-		if(!path_is_file(path, d->d_name))
+	while((readdir_r(curr, buf, &d) == 0) && d) {
+		if(!path_is_file(dt, path, d->d_name))
 			continue;
 
 		if(!strcmp(d->d_name, "reg")) {
-			if(dev_parse_reg(dev, path, "reg"))
+			if(dev_parse_reg(dt, dev, path, "reg"))
 				goto clean_and_exit;
 		}
 		if(!strcmp(d->d_name, "compatible")) {
-			if(dev_parse_compat(dev, path, "compatible"))
+			if(dev_parse_compat(dt, dev, path, "compatible"))
 				goto clean_and_exit;
 		}
 
 		if (dtree_bindings) {
-			if(dev_parse_bindings(dev, path, d->d_name))
+			if(dev_parse_bindings(dt, dev, path, d->d_name))
 				goto clean_and_exit;
 		}
 	}
@@ -572,36 +609,38 @@ clean_and_exit:
 	return NULL;
 }
 
-struct dtree_dev_t *dtree_procfs_next(void)
+struct dtree_dev_t *dtree_procfs_next(struct dtree_t *dt)
 {
-	if(g_dir == NULL)
+	struct dtree_procfs_t *procfs = dt->procfs;
+
+	if(procfs->dir == NULL)
 		return NULL;
 
 	struct dtree_dev_t *dev = NULL;
 
-	while(dev == NULL && g_dir != NULL) {
-		if(dir_has_file(g_dir, &g_path, "reg")) {
-			dev = dev_from_dir(g_dir, &g_path);
+	while(dev == NULL && procfs->dir != NULL) {
+		if(dir_has_file(dt, procfs->dir, &procfs->path, "reg")) {
+			dev = dev_from_dir(dt, procfs->dir, &procfs->path);
 
-			if(dev == NULL && dtree_iserror())
+			if(dev == NULL && dtree_iserror(dt))
 				return NULL;
 		}
 
-		rewinddir(g_dir);
-		DIR *dir = go_next_dir(g_dir, &g_path);
-		if(dir == NULL && dtree_iserror()) {
+		rewinddir(procfs->dir);
+		DIR *dir = go_next_dir(dt, procfs->dir, &procfs->path);
+		if(dir == NULL && dtree_iserror(dt)) {
 			return NULL;
 		}
 		
 		if(dir == NULL)
-			dir = go_up_next_dir(&g_path);
+			dir = go_up_next_dir(dt);
 
-		if(dir == NULL && dtree_iserror()) {
+		if(dir == NULL && dtree_iserror(dt)) {
 			return NULL;
 		}
 
-		closedir(g_dir);
-		g_dir = dir;
+		closedir(procfs->dir);
+		procfs->dir = dir;
 	}
 
 	return dev;

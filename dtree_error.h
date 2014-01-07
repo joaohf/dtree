@@ -12,7 +12,7 @@
 /**
  * Clears current error state.
  */
-void dtree_error_clear(void);
+void dtree_error_clear(struct dtree_t *dt);
 
 /**
  * Sets error state. When negative it assumes that
@@ -20,19 +20,19 @@ void dtree_error_clear(void);
  * internal error code.
  * Passing zero is an error.
  */
-void dtree_error_set(int e);
+void dtree_error_set(struct dtree_t *dt, int e);
 
 /**
  * Sets error state to negative and internal errno
  * to the given value.
  */
-void dtree_errno_set(int e);
+void dtree_errno_set(struct dtree_t *dt, int e);
 
 /**
  * Tests errno and if it describes and error
  * it sets the error state.
  */
-void dtree_error_from_errno(void);
+void dtree_error_from_errno(struct dtree_t *dt);
 
 #endif
 

@@ -41,7 +41,7 @@ void test_bcd_inc(void)
 
 		print_bcd(i, count, 20, number);
 
-		fail_on_true(strcmp(expect, bcd_tostr(number)), "Doesn't match the expected result");
+		fail_on_true(NULL, strcmp(expect, bcd_tostr(number)), "Doesn't match the expected result");
 		bcd_inc(number);
 	}
 
