@@ -1,6 +1,6 @@
-CC = gcc
-AR = ar
-CFLAGS = -std=gnu99 -Wall -pedantic -Wextra -g -fPIC
+CC := gcc
+AR := ar
+CFLAGS := -std=gnu99 -Wall -pedantic -Wextra -g -fPIC
 
 Q ?= @
 
