@@ -17,6 +17,12 @@
 #include <stdint.h>
 #include <stdio.h>
 
+//
+// Handle Data types
+//
+
+struct dtree_t;
+
 struct dtree_t {
 	/**
 	 * Error state.
@@ -30,6 +36,8 @@ struct dtree_t {
 	int xerrno;
 
 	struct dtree_procfs_t *procfs;
+	struct dtree_list_t *head;
+	struct dtree_dev_t *curr;
 };
 
 //
@@ -79,6 +87,8 @@ struct dtree_dev_t {
 	dtree_addr_t base;
 	dtree_addr_t high;
 	const char  **compat;
+
+	const char *fpath;
 	struct dtree_hash_properties *properties;
 };
 
@@ -160,7 +170,6 @@ uint32_t dtree_dev_get_integer_property(const struct dtree_dev_t *d, const char 
  * Returns next available device entry.
  * The entry should be free'd by dtree_dev_free().
  *
- * Uses shared internal iterator.
  * To search from beginning call dtree_reset().
  *
  * When no more entries are available or and error occoures
@@ -169,11 +178,33 @@ uint32_t dtree_dev_get_integer_property(const struct dtree_dev_t *d, const char 
 struct dtree_dev_t *dtree_next(struct dtree_t *dt);
 
 /**
+ * Returns next available device entry that matched.
+ * The entry should be free'd by dtree_next_dev_free().
+ *
+ * To search from beginning call dtree_reset().
+ *
+ * When no more entries are available or and error occoures
+ * returns NULL. On error sets error state.
+ */
+struct dtree_t *dtree_next_dev_match(struct dtree_t *dt);
+
+/**
+ * Look up for device by match name. Returns all occurences
+ * of device with the given match name.
+ * The entry should be free'd by dtree_dev_free().
+ *
+ * To search from beginning call dtree_reset().
+ *
+ * Returns NULL when not found or on error.
+ * On error sets error state.
+ */
+struct dtree_t *dtree_bymatch(struct dtree_t *dt, const char *match);
+
+/**
  * Look up for device by name. Returns the first occurence
  * of device with the given name.
  * The entry should be free'd by dtree_dev_free().
  *
- * Uses shared internal iterator.
  * To search from beginning call dtree_reset().
  *
  * Returns NULL when not found or on error.
@@ -185,7 +216,6 @@ struct dtree_dev_t *dtree_byname(struct dtree_t *dt, const char *name);
  * Looks up for device compatible with the given type.
  * The entry should be free'd by dtree_dev_free().
  *
- * Uses shared internal iterator.
  * To search from beginning call dtree_reset().
  *
  * Returns NULL when not found or on error.
@@ -202,7 +232,6 @@ struct dtree_dev_t *dtree_bycompat(struct dtree_t *dt, const char *compat);
  */
 int dtree_reset(struct dtree_t *dt);
 
-
 //
 // Common functions
 //
@@ -213,6 +242,13 @@ int dtree_reset(struct dtree_t *dt);
  * iterator call (or as soon as possible).
  */
 void dtree_dev_free(struct dtree_dev_t *dev);
+
+/**
+ * Frees the given device tree entry (returned mostly by matched iterators).
+ * It is recommended to free every dev instance before next
+ * iterator call (or as soon as possible).
+ */
+void dtree_next_dev_free(struct dtree_t *dt);
 
 /**
  * Tests whether the module is in an error state.
@@ -235,5 +271,25 @@ int dtree_iserror(struct dtree_t *dt);
  * The pointer points to static memory.
  */
 const char *dtree_errstr(struct dtree_t *dt);
+
+/**
+ * Set dtree_binding array to get extra properties
+ */
+void dtree_procfs_set_bindings(struct dtree_binding_t *dt_b);
+
+/**
+ * Unset dtree_binding array
+ */
+void dtree_procfs_unset_bindings();
+
+/**
+ * Helper function to parse a string
+ */
+int dev_parse_helper_string(struct dtree_t *dt, struct dtree_dev_t *dev, FILE *f, const char *fname);
+
+/**
+ * Helper function to parse a integer
+ */
+int dev_parse_helper_integer(struct dtree_t *dt, struct dtree_dev_t *dev, FILE *f, const char *fname);
 
 #endif

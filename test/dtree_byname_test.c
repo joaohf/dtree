@@ -1,5 +1,4 @@
 #include "dtree.h"
-#include "dtree_procfs.h"
 #include "test.h"
 
 struct dtree_t *dt = NULL;

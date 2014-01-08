@@ -12,14 +12,13 @@
 #include "dtree_properties.h"
 #include "stack.h"
 
+#include <stddef.h>
+#include <unistd.h>
 #include <errno.h>
 #include <dirent.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
-
-#define container_of(ptr, type, member) \
-     ( (type *)((char *)(ptr) - offsetof(type, member)) )
 
 struct dtree_procfs_t {
 	struct stack *path;
@@ -570,7 +569,8 @@ struct dtree_dev_t *dev_from_dir(struct dtree_t *dt, DIR *curr, struct stack **p
 		return NULL;
 	}
 
-	assert(stack_depth(path) > 1); // the root is never a device
+//	if (!dt->flag_disable_root_dev)
+//		assert(stack_depth(path) > 1); // the root is never a device
 
 	dev->properties = NULL;
 	dev->compat = &NULL_ENTRY;
@@ -581,7 +581,26 @@ struct dtree_dev_t *dev_from_dir(struct dtree_t *dt, DIR *curr, struct stack **p
 		return NULL;
 	}
 
-	struct dirent *d;
+	dev->fpath = file_path_from_stack(path, "");
+
+	uint32_t isnode = 0;
+	if (stack_depth(path) == 1) {
+		uint32_t isnode = 1;
+		dtree_property_add(dev, "isnode", &isnode, 0);
+	} else {
+		dtree_property_add(dev, "isnode", &isnode, 0);
+	}
+
+	long name_max;
+	struct dirent *d, *buf = NULL;
+
+	name_max = pathconf(dev->name, _PC_NAME_MAX);
+	if (name_max == -1)
+		name_max = 255;
+
+	buf = (struct dirent *)malloc(
+            offsetof(struct dirent, d_name) + name_max + 1);
+
 	rewinddir(curr);
 	while((readdir_r(curr, buf, &d) == 0) && d) {
 		if(!path_is_file(dt, path, d->d_name))
@@ -602,9 +621,12 @@ struct dtree_dev_t *dev_from_dir(struct dtree_t *dt, DIR *curr, struct stack **p
 		}
 	}
 
+	free((void *) buf);
+
 	return dev;
 
 clean_and_exit:
+	free((void *) buf);
 	dtree_procfs_dev_free(dev);
 	return NULL;
 }

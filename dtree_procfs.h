@@ -39,16 +39,5 @@ void dtree_procfs_dev_free(struct dtree_dev_t *dev);
  */
 int dtree_procfs_reset(struct dtree_t *dt);
 
-/**
- * Set dtree_binding array to get extra properties
- */
-void dtree_procfs_set_bindings(struct dtree_binding_t *dt_b);
-
-void dtree_procfs_unset_bindings();
-
-int dev_parse_helper_string(struct dtree_t *dt, struct dtree_dev_t *dev, FILE *f, const char *fname);
-
-int dev_parse_helper_integer(struct dtree_t *dt, struct dtree_dev_t *dev, FILE *f, const char *fname);
-
 #endif
 

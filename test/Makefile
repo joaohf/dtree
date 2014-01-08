@@ -9,6 +9,7 @@ VALGRIND ?= valgrind --leak-check=full --show-reachable=yes
 TESTS  = dtree_open_test
 TESTS += dtree_next_test
 TESTS += dtree_byname_test
+TESTS += dtree_bymatch_test
 TESTS += dtree_parsehex_test
 TESTS += dtree_bycompat_test
 TESTS += dtree_bcd_test
@@ -18,6 +19,7 @@ all: $(TESTS)
 dtree_open_test: dtree_open_test.o libdtree.a
 dtree_next_test: dtree_next_test.o libdtree.a
 dtree_byname_test: dtree_byname_test.o libdtree.a
+dtree_bymatch_test: dtree_bymatch_test.o libdtree.a
 dtree_parsehex_test: dtree_parsehex_test.c libdtree.a
 dtree_bycompat_test: dtree_bycompat_test.c libdtree.a
 dtree_bcd_test: dtree_bcd_test.c libdtree.a
