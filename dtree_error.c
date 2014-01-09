@@ -1,4 +1,5 @@
 #include "dtree.h"
+#include "dtree_priv.h"
 #include "dtree_error.h"
 
 #include <errno.h>

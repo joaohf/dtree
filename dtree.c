@@ -1,4 +1,5 @@
 #include "dtree.h"
+#include "dtree_priv.h"
 #include "dtree_error.h"
 #include "dtree_procfs.h"
 #include "utlist.h"
@@ -65,13 +66,16 @@ struct dtree_dev_t *dtree_next(struct dtree_t *dt)
 
 struct dtree_t *dtree_next_dev_match(struct dtree_t *dt)
 {
+	struct dtree_dev_priv_t *pdev = NULL;
 	struct dtree_list_t *next  = NULL;
 	struct dtree_list_t *tmp = NULL;
+	int err = 0;
 
 	DL_FOREACH_SAFE(dt->head, next, tmp) {
 		DL_DELETE(dt->head, next);
 
-		int err = dtree_procfs_open(next->dt->curr->fpath, next->dt);
+		pdev = (struct dtree_dev_priv_t *) next->dt->curr;
+		err = dtree_procfs_open(pdev->fpath, next->dt);
 
 		if(err != 0) {
 			dtree_error_clear(next->dt);

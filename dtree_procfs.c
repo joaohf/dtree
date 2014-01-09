@@ -6,6 +6,7 @@
 #define _BSD_SOURCE
 
 #include "dtree.h"
+#include "dtree_priv.h"
 #include "dtree_error.h"
 #include "dtree_util.h"
 #include "dtree_procfs.h"
@@ -563,16 +564,18 @@ int dev_parse_bindings(struct dtree_t *dt, struct dtree_dev_t *dev, struct stack
 static
 struct dtree_dev_t *dev_from_dir(struct dtree_t *dt, DIR *curr, struct stack **path)
 {
-	struct dtree_dev_t *dev = malloc(sizeof(struct dtree_dev_t));
-	if(dev == NULL) {
+	struct dtree_dev_priv_t *pdev = malloc(sizeof(struct dtree_dev_priv_t));
+	if(pdev == NULL) {
 		dtree_error_from_errno(dt);
 		return NULL;
 	}
 
+	struct dtree_dev_t *dev = &pdev->base;
+
 //	if (!dt->flag_disable_root_dev)
 //		assert(stack_depth(path) > 1); // the root is never a device
 
-	dev->properties = NULL;
+	pdev->properties = NULL;
 	dev->compat = &NULL_ENTRY;
 	dev->name = strdup((char *) stack_top(path));
 	if(dev->name == NULL) {
@@ -581,7 +584,7 @@ struct dtree_dev_t *dev_from_dir(struct dtree_t *dt, DIR *curr, struct stack **p
 		return NULL;
 	}
 
-	dev->fpath = file_path_from_stack(path, "");
+	pdev->fpath = file_path_from_stack(path, "");
 
 	uint32_t isnode = 0;
 	if (stack_depth(path) == 1) {
@@ -672,6 +675,8 @@ void dtree_procfs_dev_free(struct dtree_dev_t *dev)
 {
 	assert(dev != NULL);
 
+	struct dtree_dev_priv_t *pdev = (struct dtree_dev_priv_t *) dev;
+
 	if(dev->name != NULL)
 		free((void *) dev->name);
 
@@ -686,9 +691,9 @@ void dtree_procfs_dev_free(struct dtree_dev_t *dev)
 	dev->base = 0;
 	dev->high = 0;
 
-	if (dev->properties) {
+	if (pdev->properties) {
 		dtree_property_empty(dev);
-		dev->properties = NULL;
+		pdev->properties = NULL;
 	}
 
 	free(dev);

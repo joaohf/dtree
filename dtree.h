@@ -12,8 +12,6 @@
 #ifndef DTREE_H
 #define DTREE_H
 
-#include "dtree_properties.h"
-
 #include <stdint.h>
 #include <stdio.h>
 
@@ -21,24 +19,10 @@
 // Handle Data types
 //
 
+/**
+ * dtree handle
+ */
 struct dtree_t;
-
-struct dtree_t {
-	/**
-	 * Error state.
-	 */
-	int error;
-
-	/**
-	 * Holds errno. It is valid when error
-	 * is less then zero.
-	 */
-	int xerrno;
-
-	struct dtree_procfs_t *procfs;
-	struct dtree_list_t *head;
-	struct dtree_dev_t *curr;
-};
 
 //
 // Module initialization & destruction
@@ -74,8 +58,6 @@ void dtree_close(struct dtree_t *dt);
  */
 typedef uint32_t dtree_addr_t;
 
-struct dtree_hash_properties;
-
 /**
  * Device info representation.
  *
@@ -87,9 +69,6 @@ struct dtree_dev_t {
 	dtree_addr_t base;
 	dtree_addr_t high;
 	const char  **compat;
-
-	const char *fpath;
-	struct dtree_hash_properties *properties;
 };
 
 struct dtree_binding_t {
@@ -142,25 +121,15 @@ const char **dtree_dev_compat(const struct dtree_dev_t *d)
 	return d->compat;
 }
 
-DTREE_GETTER
-const char *dtree_dev_get_string_property(const struct dtree_dev_t *d, const char *name)
-{
-	struct dtree_data data;
+/**
+ * Get a string property from dev
+ */
+const char *dtree_dev_get_string_property(const struct dtree_dev_t *d, const char *name);
 
-	dtree_property_find(d, name, &data);
-
-	return data.d.s;
-}
-
-DTREE_GETTER
-uint32_t dtree_dev_get_integer_property(const struct dtree_dev_t *d, const char *name)
-{
-	struct dtree_data data;
-
-	dtree_property_find(d, name, &data);
-
-	return data.d.v;
-}
+/**
+ * Get a integer property from dev
+ */
+uint32_t dtree_dev_get_integer_property(const struct dtree_dev_t *d, const char *name);
 
 //
 // Iteration routines
