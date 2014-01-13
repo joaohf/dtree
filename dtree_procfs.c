@@ -95,6 +95,7 @@ int dtree_procfs_open(const char *rootd, struct dtree_t *dt)
 	return 0;
 
 clean_and_exit:
+	dt->procfs = procfs;
     dtree_procfs_close(dt);
     return -1;
 
@@ -105,10 +106,15 @@ exit_no_clean:
 
 void dtree_procfs_close(struct dtree_t *dt)
 {
-	struct dtree_procfs_t *procfs = dt->procfs;
+	struct dtree_procfs_t *procfs = NULL;
 
-	if (!procfs)
+	if (!dt)
 		return;
+
+	if (!dt->procfs)
+		return;
+
+	procfs = dt->procfs;
 
 	if(procfs->dir != NULL) {
 		closedir(procfs->dir);
@@ -121,6 +127,8 @@ void dtree_procfs_close(struct dtree_t *dt)
 	}
 
 	free((void *) procfs);
+
+	dt->procfs = NULL;
 }
 
 int dtree_procfs_reset(struct dtree_t *dt)
@@ -677,19 +685,28 @@ void dtree_procfs_dev_free(struct dtree_dev_t *dev)
 
 	struct dtree_dev_priv_t *pdev = (struct dtree_dev_priv_t *) dev;
 
-	if(dev->name != NULL)
+	if(dev->name != NULL) {
 		free((void *) dev->name);
+		dev->name = NULL;
+	}
 
 	assert(dev->compat != NULL);
 	if(dev->compat != &NULL_ENTRY) {
 		free((void *) dev->compat[0]);
+		//dev->compat[0] = NULL;
 		free((void *) dev->compat);
+		//dev->compat = NULL;
 	}
 
 	dev->name   = NULL;
 	dev->compat = NULL;
 	dev->base = 0;
 	dev->high = 0;
+
+	if(pdev->fpath != NULL) {
+		free((void *) pdev->fpath);
+		pdev->fpath = NULL;
+	}
 
 	if (pdev->properties) {
 		dtree_property_empty(dev);

@@ -29,7 +29,7 @@ static void dtree_destroy(struct dtree_t *dt)
 
 static struct dtree_t *dtree_new_from_dev(struct dtree_dev_t *dev)
 {
-	struct dtree_t *dt = dtree_new();
+	struct dtree_t *dt = calloc(1, sizeof(struct dtree_t));
 
 	dt->curr = dev;
 
@@ -55,6 +55,9 @@ int dtree_open(const char *rootd, struct dtree_t **dt)
 
 void dtree_close(struct dtree_t *dt)
 {
+	if (!dt)
+		return;
+
 	dtree_procfs_close(dt);
 	dtree_destroy(dt);
 }
@@ -74,6 +77,8 @@ struct dtree_t *dtree_next_dev_match(struct dtree_t *dt)
 	DL_FOREACH_SAFE(dt->head, next, tmp) {
 		DL_DELETE(dt->head, next);
 
+		DL_APPEND(dt->head_orphan, next);
+
 		pdev = (struct dtree_dev_priv_t *) next->dt->curr;
 		err = dtree_procfs_open(pdev->fpath, next->dt);
 
@@ -90,8 +95,45 @@ struct dtree_t *dtree_next_dev_match(struct dtree_t *dt)
 
 void dtree_next_dev_free(struct dtree_t *dt)
 {
-	if (dt->curr)
+	struct dtree_list_t *next  = NULL;
+	struct dtree_list_t *tmp = NULL;
+
+	DL_FOREACH_SAFE(dt->head_orphan, next, tmp) {
+		DL_DELETE(dt->head_orphan, next);
+
+		if (next->dt->curr) {
+			dtree_dev_free(next->dt->curr);
+			next->dt->curr = NULL;
+		}
+		dtree_reset(next->dt);
+		dtree_close(next->dt);
+		next->dt = NULL;
+
+		free(next);
+		next = NULL;
+	}
+
+#if 0
+	DL_FOREACH_SAFE(dt->head, next, tmp) {
+		DL_DELETE(dt->head, next);
+
+		if (next->dt->curr) {
+			dtree_dev_free(next->dt->curr);
+			next->dt->curr = NULL;
+		}
+		dtree_reset(next->dt);
+		dtree_close(next->dt);
+		next->dt = NULL;
+
+		free(next);
+		next = NULL;
+	}
+#endif
+
+	if (dt->curr) {
 		dtree_dev_free(dt->curr);
+		dt->curr = NULL;
+	}
 }
 
 void dtree_dev_free(struct dtree_dev_t *dev)
@@ -121,11 +163,14 @@ struct dtree_t *dtree_bymatch(struct dtree_t *dt, const char *match)
 			tmp = dtree_new_from_dev(curr);
 
 			el_tmp = calloc(1, sizeof(struct dtree_list_t));
-
 			el_tmp->dt = tmp;
 
 			DL_APPEND(dt->head, el_tmp);
+
+			continue;
 		}
+
+		dtree_dev_free(curr);
 	}
 
 	return dt;

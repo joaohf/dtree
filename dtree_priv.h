@@ -26,6 +26,7 @@ struct dtree_t {
 
 	struct dtree_procfs_t *procfs;
 	struct dtree_list_t *head;
+	struct dtree_list_t *head_orphan;
 	struct dtree_dev_t *curr;
 };
 

@@ -59,8 +59,12 @@ void dtree_property_empty(struct dtree_dev_t * const dev)
 	HASH_ITER(hh, pdev->properties, current, tmp) {
 	    HASH_DEL(pdev->properties, current);
 
-	    if (current->d.length > 0)
+	    if (current->d.length > 0) {
 	    	free((void *) current->d.d.s);
+	    	current->d.d.s = NULL;
+	    }
+
+	    free(current);
 	}
 }
 
