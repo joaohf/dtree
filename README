@@ -22,24 +22,21 @@ about the device. Currently it offers these properties:
 * `high` - highest address of the device (not mandatory, can be set to be <= `base`, if not available)
 * `compat` - array of compatible device types (finished with NULL)
 
-The library is not reentrant and thus not thread safe. If it is successfully
-initialized by call dtree_open() it has to be closed by dtree_close() before
-program exit to free resources (even on die call...).
-
-
 ### Look up a device
 
-	int err = dtree_open("/proc/device-tree");
+	struct dtree_t *dt = NULL;
+	int err = dtree_open("/proc/device-tree", &dt);
 	die_on_error(err);
 
-	struct dtree_dev_t *eth = dtree_byname("ethernet");
+	struct dtree_dev_t *eth = dtree_byname(dt, "ethernet");
 	if(eth == 0)
 		die_no_ethernet();
 
 	process_eth(eth);
 	dtree_dev_free(eth);
 
-	dtree_close();
+	dtree_reset(dt);
+	dtree_close(dt);
 
 Note call to `dtree_dev_free()` after the device information
 is not used anymore.
@@ -47,24 +44,26 @@ is not used anymore.
 
 ### List available devices
 
-	int err = dtree_open("/proc/device-tree");
+	struct dtree_t *dt = NULL;
+	int err = dtree_open("/proc/device-tree", &dt);
 	die_on_error(err);
 
 	struct dtree_dev_t *dev = NULL;
-	while((dev = dtree_next()) != NULL) {
+	while((dev = dtree_next(dt)) != NULL) {
 		process_dev(dev);
 		dtree_dev_free(dev);
 	}
 
-	dtree_close();
+	dtree_reset(dt);
+	dtree_close(dt);
 
 ### Search again with reset
 
 	// declarations, open dtree...
 	
-	eth = dtree_byname("ethernet");
-	dtree_reset();
-	serial = dtree_byname("serial");
+	eth = dtree_byname(dt, "ethernet");
+	dtree_reset(dt);
+	serial = dtree_byname(dt, "serial");
 
 	process(eth, serial);
 	dtree_dev_free(eth);
@@ -77,19 +76,20 @@ is not used anymore.
 
 	// declarations...
 
-	if(dtree_open(DT_PATH) != 0) {
+	if(dtree_open(DT_PATH, &dt) != 0) {
 		die(dtree_errstr());
 	}
 
-	eth = dtree_byname("ethernet");
+	eth = dtree_byname(dt, "ethernet");
 	if(eth == NULL) {
-		if(dtree_iserror())
-			die(dtree_errstr());
+		if(dtree_iserror(dt))
+			die(dtree_errstr(dt));
 		else
 			die("Ethernet device is not present in the system");
 	}
 
-	dtree_close();
+	dtree_reset(dt);
+	dtree_close(dt);
 
 
 Testing
