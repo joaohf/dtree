@@ -129,7 +129,7 @@ const char *dtree_dev_get_string_property(const struct dtree_dev_t *d, const cha
 /**
  * Get a integer property from dev
  */
-uint32_t dtree_dev_get_integer_property(const struct dtree_dev_t *d, const char *name);
+uint32_t dtree_dev_get_integer_property(const struct dtree_dev_t *d, const char *name, int *error);
 
 //
 // Iteration routines

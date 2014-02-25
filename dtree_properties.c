@@ -72,16 +72,24 @@ const char *dtree_dev_get_string_property(const struct dtree_dev_t *d, const cha
 {
 	struct dtree_data data;
 
-	dtree_property_find(d, name, &data);
+	if (dtree_property_find(d, name, &data) < 0) {
+		return NULL;
+	}
 
 	return data.d.s;
 }
 
-uint32_t dtree_dev_get_integer_property(const struct dtree_dev_t *d, const char *name)
+uint32_t dtree_dev_get_integer_property(const struct dtree_dev_t *d, const char *name, int *error)
 {
 	struct dtree_data data;
 
-	dtree_property_find(d, name, &data);
+	*error = 0;
+
+	if (dtree_property_find(d, name, &data) < 0) {
+		*error = -1;
+
+		return 0;
+	}
 
 	return data.d.v;
 }

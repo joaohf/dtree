@@ -90,7 +90,8 @@ void test_find_with_discriminator(void)
 	dtree_addr_t base = dtree_dev_base(dev);
 	dtree_addr_t high = dtree_dev_high(dev);
 	const char *prop1 = dtree_dev_get_string_property(dev, "instance");
-	const uint32_t prop2 = dtree_dev_get_integer_property(dev, "value");
+	int value_error;
+	const uint32_t prop2 = dtree_dev_get_integer_property(dev, "value", &value_error);
 
 	fail_on_false(dt, high - base == 0xFFFF, "Invalid high detected for serial@84000000)");
 

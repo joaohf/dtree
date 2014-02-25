@@ -35,7 +35,8 @@ void test_find_existent(void)
 	    while( (dev = dtree_next(curr_dt)) ) {
 			const char  *name = dtree_dev_name(dev);
 			dtree_addr_t base = dtree_dev_base(dev);
-			const uint32_t prop1 = dtree_dev_get_integer_property(dev, "isnode");
+			int value_error;
+			const uint32_t prop1 = dtree_dev_get_integer_property(dev, "isnode", &value_error);
 			printf("DEV '%s' at 0x%08X isnode: %s\n", name, base, prop1 ? "TRUE" : "FALSE");
 			dtree_dev_free(dev);
 	    }
@@ -103,7 +104,8 @@ void test_find_with_discriminator(void)
 	dtree_addr_t base = dtree_dev_base(dev);
 	dtree_addr_t high = dtree_dev_high(dev);
 	const char *prop1 = dtree_dev_get_string_property(dev, "instance");
-	const uint32_t prop2 = dtree_dev_get_integer_property(dev, "value");
+	int value_error;
+	const uint32_t prop2 = dtree_dev_get_integer_property(dev, "value", &value_error);
 
 	fail_on_false(dt, high - base == 0xFFFF, "Invalid high detected for serial@84000000)");
 
