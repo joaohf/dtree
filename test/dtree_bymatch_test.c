@@ -91,6 +91,7 @@ void test_find_with_discriminator(void)
 	struct dtree_binding_t binds[] = {
 		{ "instance", dev_parse_helper_string },
 		{ "value", dev_parse_helper_integer },
+		{ "gpios", dev_parse_helper_int_data },
 		{ NULL, NULL }
 	};
 
@@ -106,10 +107,17 @@ void test_find_with_discriminator(void)
 	const char *prop1 = dtree_dev_get_string_property(dev, "instance");
 	int value_error;
 	const uint32_t prop2 = dtree_dev_get_integer_property(dev, "value", &value_error);
+	struct prop3 {
+	        uint32_t n;
+		uint32_t dir;
+	} prop3;
+	dtree_dev_get_int_data_property(dev, "gpios", (uintptr_t *) &prop3, sizeof(struct prop3));
+
 
 	fail_on_false(dt, high - base == 0xFFFF, "Invalid high detected for serial@84000000)");
 
-	printf("DEV '%s' at 0x%08X properties: instance '%s' value '%d'\n", name, base, prop1, prop2);
+	printf("DEV '%s' at 0x%08X properties: instance '%s' value '%d' n '%d' dir '%d'\n",
+	 name, base, prop1, prop2, prop3.n, prop3.dir);
 	dtree_dev_free(dev);
 	dtree_procfs_unset_bindings();
 
