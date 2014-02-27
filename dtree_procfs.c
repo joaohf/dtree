@@ -431,6 +431,21 @@ uint32_t convert_raw32(const char *s) {
 }
 
 static
+void convert_raw32_length(void *p, int len) {
+	int max_int = len / sizeof(uint32_t);
+	int curr_int = 0;
+	int i;
+	uint32_t value[max_int];
+	char *s = (char *) p;
+
+	for(i = 0, curr_int = 0; i < max_int; ++i, curr_int += 4) {
+		value[i] = convert_raw32(s + curr_int);
+	}
+
+	memcpy(p, &value, len);
+}
+
+static
 int dev_parse_reg(struct dtree_t *dt, struct dtree_dev_t *dev, struct stack **path, const char *fname)
 {
 	FILE *regf = path_fopen(dt, path, fname, "r");
@@ -520,7 +535,7 @@ int dev_parse_helper_string(struct dtree_t *dt, struct dtree_dev_t *dev, FILE *f
 	if(content == NULL)
 		return 2;
 
-	dtree_property_add(dev, fname, content, length);
+	dtree_property_add(dev, fname, content, length, DTREE_DATA_STRING);
 
 	return 0;
 }
@@ -545,7 +560,23 @@ int dev_parse_helper_integer(struct dtree_t *dt, struct dtree_dev_t *dev, FILE *
 
 	free((void *) content);
 
-	dtree_property_add(dev, fname, &value, 0);
+	dtree_property_add(dev, fname, &value, 0, DTREE_DATA_INT);
+
+	return 0;
+}
+
+int dev_parse_helper_int_data(struct dtree_t *dt, struct dtree_dev_t *dev, FILE *f, const char *fname)
+{
+	if(f == NULL)
+		return 1;
+
+	size_t length = 0;
+	char *content = file_read_and_close(dt, f, &length);
+	if(content == NULL)
+		return 2;
+
+	convert_raw32_length((void *)content, length);
+	dtree_property_add(dev, fname, content, length, DTREE_DATA);
 
 	return 0;
 }
@@ -597,9 +628,9 @@ struct dtree_dev_t *dev_from_dir(struct dtree_t *dt, DIR *curr, struct stack **p
 	uint32_t isnode = 0;
 	if (stack_depth(path) == 1) {
 		uint32_t isnode = 1;
-		dtree_property_add(dev, "isnode", &isnode, 0);
+		dtree_property_add(dev, "isnode", &isnode, 0, DTREE_DATA_INT);
 	} else {
-		dtree_property_add(dev, "isnode", &isnode, 0);
+		dtree_property_add(dev, "isnode", &isnode, 0, DTREE_DATA_INT);
 	}
 
 	long name_max;

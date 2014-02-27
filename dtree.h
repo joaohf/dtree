@@ -131,6 +131,11 @@ const char *dtree_dev_get_string_property(const struct dtree_dev_t *d, const cha
  */
 uint32_t dtree_dev_get_integer_property(const struct dtree_dev_t *d, const char *name, int *error);
 
+/**
+ * Get a integer data propery from dev
+ */
+int dtree_dev_get_int_data_property(const struct dtree_dev_t *d, const char *name, uintptr_t *pdata, int pdata_size);
+
 //
 // Iteration routines
 //
@@ -260,5 +265,10 @@ int dev_parse_helper_string(struct dtree_t *dt, struct dtree_dev_t *dev, FILE *f
  * Helper function to parse a integer
  */
 int dev_parse_helper_integer(struct dtree_t *dt, struct dtree_dev_t *dev, FILE *f, const char *fname);
+
+/**
+ * Helper function to parse a integer data
+ */
+int dev_parse_helper_int_data(struct dtree_t *dt, struct dtree_dev_t *dev, FILE *f, const char *fname);
 
 #endif

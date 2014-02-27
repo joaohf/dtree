@@ -18,17 +18,24 @@ struct dtree_hash_properties {
 	UT_hash_handle hh;
 };
 
-void dtree_property_add(struct dtree_dev_t *dev, const char *name, const void *ptr_value, int length)
+void dtree_property_add(struct dtree_dev_t *dev, const char *name, const void *ptr_value, int length, int type)
 {
 	struct dtree_dev_priv_t *pdev = (struct dtree_dev_priv_t *) dev;
 	struct dtree_hash_properties *p;
 
 	p = calloc(1, sizeof(struct dtree_hash_properties));
 
-	if (length > 0)
-		p->d.d.s = (char *)ptr_value;
-	else
+	switch (type) {
+	case DTREE_DATA:
+		p->d.d.p = (uintptr_t *) ptr_value;
+		break;
+	case DTREE_DATA_INT:
 		p->d.d.v = *((uintptr_t *) ptr_value);
+		break;
+	case DTREE_DATA_STRING:
+		p->d.d.s = (char *)ptr_value;
+		break;
+	}
 
 	p->d.length = length;
 	strcpy(p->name, name);
@@ -92,5 +99,22 @@ uint32_t dtree_dev_get_integer_property(const struct dtree_dev_t *d, const char 
 	}
 
 	return data.d.v;
+}
+
+int dtree_dev_get_int_data_property(const struct dtree_dev_t *d, const char *name,
+		uintptr_t *pdata, int pdata_size)
+{
+	struct dtree_data data;
+
+	if (dtree_property_find(d, name, &data) < 0) {
+		return -1;
+	}
+
+	if (data.length != pdata_size)
+		return -1;
+
+	memcpy(pdata, data.d.p, pdata_size);
+
+	return 0;
 }
 

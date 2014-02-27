@@ -12,15 +12,22 @@
 
 struct dtree_dev_t;
 
+enum dtree_data_type {
+	DTREE_DATA,
+	DTREE_DATA_INT,
+	DTREE_DATA_STRING
+};
+
 struct dtree_data {
 	int length;
 	union {
 		uint32_t v;
 		char *s;
+		uintptr_t *p;
 	} d;
 };
 
-void dtree_property_add(struct dtree_dev_t *dev, const char *name, const void *ptr_value, int length);
+void dtree_property_add(struct dtree_dev_t *dev, const char *name, const void *ptr_value, int length, int type);
 
 void dtree_property_empty(struct dtree_dev_t * const dev);
 
