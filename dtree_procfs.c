@@ -637,7 +637,7 @@ struct dtree_dev_t *dev_from_dir(struct dtree_t *dt, DIR *curr, struct stack **p
 
 	uint32_t isnode = 0;
 	if (stack_depth(path) == 1) {
-		uint32_t isnode = 1;
+		isnode = 1;
 		dtree_property_add(dev, "isnode", &isnode, 0, DTREE_DATA_INT);
 	} else {
 		dtree_property_add(dev, "isnode", &isnode, 0, DTREE_DATA_INT);
