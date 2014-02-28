@@ -33,11 +33,12 @@ void test_find_existent(void)
 
 	while ( (curr_dt = dtree_next_dev_match(pdt)) != NULL) {
 	    while( (dev = dtree_next(curr_dt)) ) {
+			const char *dev_name = dtree_dev_get_string_property(dev, "name");
 			const char  *name = dtree_dev_name(dev);
 			dtree_addr_t base = dtree_dev_base(dev);
 			int value_error;
 			const uint32_t prop1 = dtree_dev_get_integer_property(dev, "isnode", &value_error);
-			printf("DEV '%s' at 0x%08X isnode: %s\n", name, base, prop1 ? "TRUE" : "FALSE");
+			printf("DEV '%s/%s' at 0x%08X isnode: %s\n", name, dev_name, base, prop1 ? "TRUE" : "FALSE");
 			dtree_dev_free(dev);
 	    }
 

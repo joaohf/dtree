@@ -446,6 +446,16 @@ void convert_raw32_length(void *p, int len) {
 }
 
 static
+int dev_parse_name(struct dtree_t *dt, struct dtree_dev_t *dev, struct stack **path, char *fname)
+{
+	FILE *f = path_fopen(dt, path, fname, "r");
+	if(f == NULL)
+		return 1;
+
+	return dev_parse_helper_string(dt, dev, f, fname);
+}
+
+static
 int dev_parse_reg(struct dtree_t *dt, struct dtree_dev_t *dev, struct stack **path, const char *fname)
 {
 	FILE *regf = path_fopen(dt, path, fname, "r");
@@ -654,6 +664,11 @@ struct dtree_dev_t *dev_from_dir(struct dtree_t *dt, DIR *curr, struct stack **p
 		}
 		if(!strcmp(d->d_name, "compatible")) {
 			if(dev_parse_compat(dt, dev, path, "compatible"))
+				goto clean_and_exit;
+		}
+
+		if(!strcmp(d->d_name, "name")) {
+			if(dev_parse_name(dt, dev, path, "name"))
 				goto clean_and_exit;
 		}
 
