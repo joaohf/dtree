@@ -4,7 +4,7 @@ LIBDIR := $(PREFIX)/lib
 BINDIR := $(PREFIX)/bin
 SBINDIR := $(PREFIX)/sbin
 INCLUDEDIR := $(PREFIX)/include
-LIBINCLUDEDIR := $(INCLUDEDIR)/dtree
+LIBINCLUDEDIR := $(INCLUDEDIR)
 MANDIR := $(PREFIX)/man
 
 # Build and install static library
