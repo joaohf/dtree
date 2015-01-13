@@ -163,6 +163,14 @@ struct dtree_dev_t *dtree_next(struct dtree_t *dt);
 struct dtree_t *dtree_next_dev_match(struct dtree_t *dt);
 
 /**
+ * Returns a subdtree which root is device entry dev.
+ * The subdtree should be free'd by dtree_close().
+ *
+ * returns NULL. On error sets error state.
+ */
+struct dtree_t *dtree_subdtree_from_dev(struct dtree_dev_t *dev);
+
+/**
  * Look up for device by match name. Returns all occurences
  * of device with the given match name.
  * The entry should be free'd by dtree_dev_free().
