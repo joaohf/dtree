@@ -1,5 +1,5 @@
 
-PREFIX := /usr/local
+PREFIX ?= /usr/local
 LIBDIR := $(PREFIX)/lib
 BINDIR := $(PREFIX)/bin
 SBINDIR := $(PREFIX)/sbin
@@ -15,7 +15,7 @@ MKDIR := mkdir -p
 RMDIR := rmdir
 RM := rm -f
 MV := mv -f
-CC := gcc
+CC ?= gcc
 AR := ar
 INSTALL := install
 LN := ln -sf
