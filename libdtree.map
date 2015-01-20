@@ -11,6 +11,7 @@ global:
   dtree_dev_get_int_data_property;
   dtree_next;
   dtree_next_dev_match;
+  dtree_subdtree_from_dev;
   dtree_bymatch;
   dtree_byname;
   dtree_bycompat;

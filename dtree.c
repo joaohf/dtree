@@ -146,6 +146,25 @@ int dtree_reset(struct dtree_t *dt)
 	return dtree_procfs_reset(dt);
 }
 
+struct dtree_t *dtree_subdtree_from_dev(struct dtree_dev_t *dev)
+{
+    struct dtree_t *subdt = NULL;
+    struct dtree_dev_priv_t *pdev = NULL;
+
+    subdt = dtree_new_from_dev(dev);
+
+    pdev = (struct dtree_dev_priv_t *) subdt->curr;
+    int err = dtree_procfs_open(pdev->fpath, subdt);
+
+    if(err != 0) {
+        dtree_error_clear(subdt);
+        return NULL;
+    }
+
+    return subdt;
+
+}
+
 struct dtree_t *dtree_bymatch(struct dtree_t *dt, const char *match)
 {
 	struct dtree_dev_t *curr = NULL;
